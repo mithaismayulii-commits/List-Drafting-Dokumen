@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Drafting Document - Bank INA</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bankina: {
+                            50: '#fdf2f2',
+                            100: '#fbe8e8',
+                            500: '#d32f2f',
+                            600: '#b71c1c', // Bank INA signature red
+                            700: '#991b1b',
+                            800: '#7f1d1d',
+                            900: '#6a1b1b',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .print-card {
+                border: 1px solid #ddd !important;
+                box-shadow: none !important;
+                margin-bottom: 1rem !important;
+                page-break-inside: avoid;
+            }
+        }
+        .print-only {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col antialiased">
+
+    <!-- Top Sticky Header -->
+    <header class="bg-bankina-600 text-white sticky top-0 z-50 shadow-md no-print">
+        <div class="max-w-3xl mx-auto px-4 py-3.5 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white text-bankina-600 p-2 rounded-xl font-bold shadow-sm flex items-center justify-center w-10 h-10 text-lg">
+                    <i class="fa-solid fa-building-columns"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg leading-tight tracking-tight">Check Drafting Document</h1>
+                    <p class="text-xs text-bankina-100 opacity-90 font-medium">Operation Development</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span id="progress-badge" class="px-3 py-1 bg-white/10 text-white text-xs font-semibold rounded-full border border-white/20">
+                    0 / 22 (0%)
+                </span>
+            </div>
+        </div>
+        <!-- Progress Bar Strip -->
+        <div class="bg-bankina-900 h-1.5 w-full">
+            <div id="header-progress" class="bg-white h-1.5 transition-all duration-300 w-0"></div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-3xl w-full mx-auto px-4 py-6 space-y-6">
+
+        <!-- Optional Document Name Card -->
+        <section class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 no-print">
+            <label for="doc-name-input" class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">
+                Nama Dokumen <span class="text-gray-400 font-normal normal-case">(Opsional / Tidak Wajib)</span>
+            </label>
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                    <i class="fa-regular fa-file-lines"></i>
+                </div>
+                <input type="text" id="doc-name-input" oninput="saveDocName()" placeholder="Contoh: PENGELOLAAN PERANGKAT KERJA TI" class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-bankina-500 focus:bg-white transition">
+            </div>
+        </section>
+
+        <!-- Control Action Card -->
+        <section class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 no-print flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+                <h2 class="text-sm font-bold text-gray-900">Reminder Check Ketentuan Drafting</h2>
+                <p class="text-xs text-gray-500 mt-0.5">Centang seluruh poin verifikasi secara teliti sebelum submit dokumen.</p>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <button onclick="resetChecklist()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 py-2 px-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition">
+                    <i class="fa-solid fa-rotate-right text-gray-500"></i> Refresh Semua
+                </button>
+                <button onclick="exportToPDF()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 py-2 px-3.5 bg-bankina-600 hover:bg-bankina-700 text-white text-xs font-semibold rounded-xl shadow-sm transition">
+                    <i class="fa-solid fa-file-pdf"></i> Save as PDF / Print
+                </button>
+            </div>
+        </section>
+
+        <!-- Checklist Items Container -->
+        <div id="checklist-container" class="space-y-4">
+            <!-- Rendered dynamically by JS -->
+        </div>
+
+    </main>
+
+    <!-- Print / PDF View -->
+    <div class="print-only max-w-3xl mx-auto p-6 bg-white">
+        <div class="border-b-2 border-bankina-600 pb-4 mb-6 flex justify-between items-end">
+            <div>
+                <h1 class="text-xl font-bold text-bankina-700">CHECK DRAFTING DOCUMENT</h1>
+                <p class="text-xs text-gray-600">Operation Development &bull; Bank INA</p>
+                <div id="print-doc-container" class="mt-2 text-xs font-semibold text-gray-800 hidden">
+                    Nama Dokumen: <span id="print-doc-name" class="font-normal"></span>
+                </div>
+            </div>
+            <div class="text-right text-xs text-gray-500">
+                <p>Tanggal: <span id="print-date"></span></p>
+                <p>Status: <span id="print-status" class="font-bold"></span></p>
+            </div>
+        </div>
+        <div id="print-content" class="space-y-4">
+            <!-- Populated via script -->
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-6 text-xs text-gray-400 no-print">
+        <p>Bank INA Operation Development &bull; Internal Drafting Compliance Tool</p>
+    </footer>
+
+    <!-- Script Application Logic -->
+    <script>
+        // Exact 22 Checklist Items for Bank INA Drafting
+        const checklistItemsData = [
+            { id: "item_1", text: "Logo Bank INA terbaru." },
+            { id: "item_2", text: "Pastiin No jadi Nomor tanpa titik." },
+            { id: "item_3", text: "Pastiin urutan, perubahan halaman." },
+            { id: "item_4", text: "Pastiin flowchart nyambung (recheck kembali alur proses)." },
+            { id: "item_5", text: "Pastiin setelah dokumen internal & eksternal ketentuan ada \"tentang\" nya." },
+            { id: "item_6", text: "Pastiin setelah create dokumen, sebelum masuk tahap blast email, ownership dipindah tangankan ke Mba Sas." },
+            { id: "item_7", text: "Pastiin margin, Gap, dll sesuai ketentuan." },
+            { id: "item_8", text: "Pastiin gaada delete apapun dari standar baku." },
+            { id: "item_9", text: "Kalau ada merah bisa jadi tandanya itu typo (recheck)." },
+            { id: "item_10", text: "Pastiin kalau cuma ada beberapa kaya 2 di pembahasan gausah dimasukin definisi umum, pakai dalam kurung aja / jadi footnote maybe?" },
+            { id: "item_11", text: "Kalo pembahasan isi misal tabelnya nama dan aspek tapi dilampiran beda (check)." },
+            { id: "item_12", text: "Recheck sama dokumen awal." },
+            { id: "item_13", text: "Recheck ketersediaan dokumen di Inside INA." },
+            { id: "item_14", text: "Di format lampiran, tambahin nomor dokumen di footer kanan, copy aja dari nomor dokumen draft yang sesuai (bold-nya ilangin, font ukuran 10)." },
+            { id: "item_15", text: "Judul lampiran kaya lampiran 1 di kanan, dst font 10, pakai nomor dokumen diatas footer sama nomor page kalau lebih dari satu halaman, pakai logo jika bentuk lampirannya form." },
+            { id: "item_16", text: "Recheck ketentuan di Inside INA harus dibuka dulu sampai cover." },
+            { id: "item_17", text: "Dibagian penutup pastiin tambahin Divisi/Departemen... Contoh: Divisi Anti-Fraud Management." },
+            { id: "item_18", text: "Header cover gaada nomor atau nama dokumen, hanya ada jenis dokumen aja. Contoh: KEBIJAKAN / SOP / PEDOMAN." },
+            { id: "item_19", text: "Nama dokumen di header Full Kapital. Contoh: PENGELOLAAN PERANGKAT KERJA TI." },
+            { id: "item_20", text: "Ketentuan internal sekarang pakai titik koma (;) disetiap akhir kalimat lalu sebelum huruf terakhir ditambahkan ; dan . diakhir dan huruf berikutnya isinya berikut perubahannya." },
+            { id: "item_21", text: "Pastikan Nomor dokumen dari Pak Syam." },
+            { id: "item_22", text: "Kalau ada lampiran, tambahkan bab lampiran di sebelum lembar kajian (yang rapi di SOP SIPELAKU)." }
+        ];
+
+        // Local storage helpers
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('bankina_draft_checklist_v2');
+                return saved ? JSON.parse(saved) : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function saveState(state) {
+            try {
+                localStorage.setItem('bankina_draft_checklist_v2', JSON.stringify(state));
+            } catch (e) {}
+        }
+
+        let currentState = loadState();
+
+        // Load saved document name on start
+        function loadDocNameState() {
+            try {
+                const docName = localStorage.getItem('bankina_draft_docname') || '';
+                document.getElementById('doc-name-input').value = docName;
+            } catch (e) {}
+        }
+
+        function saveDocName() {
+            try {
+                const val = document.getElementById('doc-name-input').value;
+                localStorage.setItem('bankina_draft_docname', val);
+            } catch (e) {}
+        }
+
+        // Render checklist UI
+        function renderChecklist() {
+            const container = document.getElementById('checklist-container');
+            let html = '';
+            let checkedCount = 0;
+            const totalItems = checklistItemsData.length;
+
+            checklistItemsData.forEach((item, index) => {
+                const isChecked = !!currentState[item.id];
+                if (isChecked) checkedCount++;
+
+                html += `
+                    <label class="flex items-start gap-3.5 p-4 rounded-2xl border transition cursor-pointer select-none ${isChecked ? 'bg-bankina-50/70 border-bankina-200 shadow-sm' : 'bg-white border-gray-100 hover:border-gray-200 shadow-sm'}">
+                        <div class="flex items-center h-5 mt-0.5">
+                            <input type="checkbox" id="${item.id}" ${isChecked ? 'checked' : ''} onchange="toggleItem('${item.id}')" class="w-4 h-4 text-bankina-600 rounded border-gray-300 focus:ring-bankina-500 accent-bankina-600 cursor-pointer">
+                        </div>
+                        <div class="flex-1 text-xs sm:text-sm">
+                            <span class="font-semibold text-bankina-700 mr-1.5">#${index + 1}</span>
+                            <span class="${isChecked ? 'font-medium text-gray-900 line-through opacity-80' : 'text-gray-700'}">${item.text}</span>
+                        </div>
+                    </label>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            // Update Progress
+            const percentage = Math.round((checkedCount / totalItems) * 100);
+            document.getElementById('header-progress').style.width = percentage + '%';
+            document.getElementById('progress-badge').innerText = `${checkedCount} / ${totalItems} (${percentage}%)`;
+        }
+
+        function toggleItem(id) {
+            const checkbox = document.getElementById(id);
+            currentState[id] = checkbox.checked;
+            saveState(currentState);
+            renderChecklist();
+        }
+
+        function resetChecklist() {
+            if (confirm("Refresh semua checklist? Semua centang akan dikosongkan kembali.")) {
+                currentState = {};
+                saveState(currentState);
+                renderChecklist();
+            }
+        }
+
+        function exportToPDF() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            const docNameVal = document.getElementById('doc-name-input').value.trim();
+            
+            if (docNameVal) {
+                document.getElementById('print-doc-name').innerText = docNameVal;
+                document.getElementById('print-doc-container').classList.remove('hidden');
+            } else {
+                document.getElementById('print-doc-container').classList.add('hidden');
+            }
+
+            let checkedCount = 0;
+            let printHtml = '';
+
+            checklistItemsData.forEach((item, index) => {
+                const isChecked = !!currentState[item.id];
+                if (isChecked) checkedCount++;
+
+                printHtml += `
+                    <div style="display: flex; align-items: flex-start; margin-bottom: 10px; font-size: 11px; border-bottom: 1px solid #f3f4f6; padding-bottom: 8px;">
+                        <div style="font-weight: bold; width: 35px; color: ${isChecked ? '#b71c1c' : '#666'};">
+                            ${isChecked ? '[✓]' : '[ ]'}
+                        </div>
+                        <div style="width: 25px; font-weight: 600; color: #b71c1c;">
+                            #${index + 1}
+                        </div>
+                        <div style="flex: 1; color: #1f2937;">
+                            ${item.text}
+                        </div>
+                    </div>
+                `;
+            });
+
+            const percentage = Math.round((checkedCount / checklistItemsData.length) * 100);
+
+            document.getElementById('print-date').innerText = dateStr;
+            document.getElementById('print-status').innerText = `${checkedCount} dari ${checklistItemsData.length} poin terpenuhi (${percentage}%)`;
+            document.getElementById('print-content').innerHTML = printHtml;
+
+            window.print();
+        }
+
+        window.onload = function() {
+            loadDocNameState();
+            renderChecklist();
+        };
+    </script>
+</body>
+</html>
